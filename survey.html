@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HIV / STI Screening (LIFF)</title>
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+<style>
+  body { font-family: 'Sarabun', system-ui, sans-serif; background:#f1f5f9; padding:16px; max-width:640px; margin:0 auto; }
+  .section { background:#fff; padding:18px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.06); margin-bottom:14px; }
+  .btn { display:block; width:100%; padding:12px; border-radius:999px; border:0; font-weight:700; cursor:pointer; }
+  .btn-primary { background:#2563eb; color:#fff; }
+  .btn-ghost { background:#e2e8f0; color:#0f172a; }
+  .question { margin-bottom:12px; }
+  .radio-row { display:flex; gap:8px; }
+  .radio-row label { flex:1; background:#e0e7ff; border-radius:999px; text-align:center; padding:8px; cursor:pointer; }
+  .small { font-size:13px; color:#64748b; margin-bottom:8px; }
+</style>
+</head>
+<body>
+
+<div class="section" id="intro">
+  <h2 style="margin:0 0 10px">HIV / STI Risk Screening</h2>
+  <p class="small">แบบประเมินสั้น — ไม่เปิดเผยตัวตน (anonymous). กรุณาตอบตามความจริง</p>
+  <button id="startBtn" class="btn btn-primary">เริ่มทำแบบประเมิน</button>
+</div>
+
+<div id="surveyArea" style="display:none">
+  <div class="section">
+    <div class="question">
+      <label>ช่วงอายุ</label><br/>
+      <select id="ageRange"><option value="">-- เลือก --</option><option value="13-17">13–17</option><option value="18+">18+</option></select>
+    </div>
+
+    <div class="question">
+      <label>เพศ</label><br/>
+      <select id="gender"><option value="">-- เลือก --</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option><option value="อื่นๆ">อื่น ๆ</option></select>
+    </div>
+
+    <div id="questionsContainer"></div>
+
+    <button id="submitBtn" class="btn btn-primary" style="margin-top:8px">ส่งแบบประเมิน</button>
+    <button id="cancelBtn" class="btn btn-ghost" style="margin-top:8px">ยกเลิก</button>
+  </div>
+</div>
+
+<div id="resultArea" style="display:none" class="section"></div>
+
+<script>
+const LIFF_ID = "2008443222-GVdMZnWA";                     // <- แทนที่ด้วย LIFF ID ของคุณ
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiLqxaCP_63DiAHzhKFdsAUN0yXUaCNiPZtvOi2_RGo_NEzj4U9wcdvXOMOkmzu7R_wA/exec";     // <- แทนที่ด้วย URL ของ Apps Script (exec)
+
+let profile = null;
+
+// คำถาม (ย่อจากชุดของคุณ) — เพิ่ม/แก้ได้ตามต้องการ
+const QUESTIONS = [
+  { id: "Q1", text: "คุณเคยมีเพศสัมพันธ์หรือไม่?" },
+  { id: "Q2", text: "คุณใช้ถุงยางทุกครั้งหรือไม่?" },
+  { id: "Q3", text: "12 เดือนที่ผ่านมา มีคู่นอน > 1 คนไหม?" },
+  { id: "Q5", text: "คุณเคยใช้ยาเสพติดแบบฉีดร่วมกับผู้อื่นหรือไม่?" },
+  { id: "Q8", text: "คุณเคยถูกบังคับหรือล่วงละเมิดทางเพศหรือไม่?" },
+  { id: "Q9", text: "ภายใน 72 ชั่วโมงมีเพศสัมพันธ์โดยไม่ป้องกันหรือไม่?" },
+  // Symptoms
+  { id: "SY1", text: "มีตกขาว/หนองผิดปกติ?" },
+  { id: "SY3", text: "มีแผล/ตุ่มที่อวัยวะเพศ?" },
+  { id: "SY4", text: "มีผื่นบริเวณผิดปกติ?" }
+];
+
+function renderQuestions() {
+  const cont = document.getElementById('questionsContainer');
+  cont.innerHTML = '';
+  QUESTIONS.forEach(q => {
+    const html = `
+      <div class="question" id="q_${q.id}">
+        <div class="small">${q.text}</div>
+        <div class="radio-row">
+          <label><input type="radio" name="${q.id}" value="ใช่" /> ใช่</label>
+          <label><input type="radio" name="${q.id}" value="ไม่" /> ไม่</label>
+          <label><input type="radio" name="${q.id}" value="ไม่แน่ใจ" /> ไม่แน่ใจ</label>
+        </div>
+      </div>
+    `;
+    cont.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+async function liffReady() {
+  await liff.init({ liffId: LIFF_ID });
+  if (!liff.isLoggedIn()) {
+    // ถ้าต้องการบังคับ login
+    if (liff.isInClient()) {
+      // ใน LIFF จะมีการ login อัตโนมัติ
+    } else {
+      liff.login({ redirectUri: location.href });
+    }
+    return;
+  }
+
+  try {
+    profile = await liff.getProfile();
+    console.log("LINE profile:", profile);
+  } catch (err) {
+    console.warn("ไม่สามารถเรียก getProfile:", err);
+    profile = null;
+  }
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('surveyArea').style.display = 'block';
+  renderQuestions();
+});
+
+document.getElementById('cancelBtn').addEventListener('click', () => {
+  location.reload();
+});
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const ageRange = document.getElementById('ageRange').value;
+  const gender = document.getElementById('gender').value;
+  if (!ageRange) return Swal.fire("กรุณาเลือกช่วงอายุ");
+  if (!gender) return Swal.fire("กรุณาเลือกเพศ");
+
+  // collect answers
+  const answers = {};
+  for (const q of QUESTIONS) {
+    const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+    if (!sel) return Swal.fire("กรุณาตอบทุกข้อที่แสดง");
+    answers[q.id] = sel.value;
+  }
+
+  Swal.fire({ title: "กำลังส่ง...", didOpen: ()=>Swal.showLoading(), allowOutsideClick:false });
+
+  const payload = {
+    action: "screening",
+    consent: true,
+    sessionId: "sess_"+Date.now(),
+    userAgent: "LIFF",
+    clientIp: "unknown",
+    ageRange,
+    gender,
+    lineUserId: profile?.userId || "", 
+    answers
+  };
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    Swal.close();
+    if (!data.ok) return Swal.fire("เกิดข้อผิดพลาด", JSON.stringify(data), "error");
+
+    // แสดงผลภายใน LIFF
+    const r = data.result;
+    document.getElementById('surveyArea').style.display = 'none';
+    document.getElementById('resultArea').style.display = 'block';
+    document.getElementById('resultArea').innerHTML = `
+      <h3>ผลการประเมิน: ${r.level}</h3>
+      <p>คะแนน: ${r.score}</p>
+      <p>Triggers: ${r.triggers.join(", ") || "-"}</p>
+      <div style="margin-top:12px">
+        <button id="goProfile" class="btn btn-primary" style="margin-bottom:8px">ไปดูรายละเอียดที่หน้าโปรไฟล์</button>
+        <button id="reqKit" class="btn btn-ghost">ขอชุดตรวจ</button>
+      </div>
+    `;
+
+    // ปุ่มไปหน้า profile (ส่ง uid เป็นพารามิเตอร์)
+    document.getElementById('goProfile').addEventListener('click', ()=> {
+      // ถ้าโฮสบน GitHub pages, ระบุ path ให้ถูกต้อง
+      window.location.href = `profile.html?uid=${encodeURIComponent(profile?.userId||"")}`;
+    });
+
+    // ปุ่มขอชุดตรวจ -> เรียก API (request_kit)
+    document.getElementById('reqKit').addEventListener('click', async () => {
+      Swal.fire({ title:"ส่งคำขอ...", didOpen:()=>Swal.showLoading(), allowOutsideClick:false });
+      const p = { action:"request_kit", lineUserId: profile?.userId || "" };
+      try {
+        const r2 = await fetch(APPS_SCRIPT_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(p)});
+        const j2 = await r2.json();
+        Swal.close();
+        if (j2.ok) Swal.fire("สำเร็จ", "คำขอชุดตรวจถูกส่งแล้ว", "success");
+        else Swal.fire("ผิดพลาด", JSON.stringify(j2), "error");
+      } catch(err) {
+        Swal.close(); Swal.fire("Error", err.message, "error");
+      }
+    });
+
+  } catch (err) {
+    Swal.close();
+    Swal.fire("Error", err.message, "error");
+  }
+});
+
+window.addEventListener('load', liffReady);
+</script>
+
+</body>
+</html>
