@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HIV / STI Screening</title>
+
+<!-- LIFF SDK -->
+
+<link
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+rel="stylesheet">
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- ปฏิทิน -->
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<style>
+/* ====== BASE ====== */
+body {
+  font-family: 'Sarabun', system-ui, sans-serif;
+  background: #f1f5f9;
+  padding: 16px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.page { display:none; opacity:0; transform:translateX(20px); transition:all .3s ease; }
+.page.active { display:block; opacity:1; transform:translateX(0); }
+
+/* ====== SECTION ====== */
+.section {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(15,23,42,0.08);
+  margin-bottom: 18px;
+}
+
+h2, h3 { margin: 0 0 12px; color:#0f172a; }
+.sub { font-size:14px; color:#64748b; }
+
+/* ====== QUESTIONS ====== */
+.question-box {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 14px;
+  border:1px solid #e2e8f0;
+  margin-bottom:14px;
+}
+.question-box p { margin:0 0 6px; }
+
+.radio-row {
+  display:flex;
+  gap:8px;
+}
+.option {
+  flex:1;
+  background:#e0e7ff;
+  border-radius:999px;
+  text-align:center;
+  cursor:pointer;
+  border:1px solid transparent;
+}
+.option input { display:none; }
+.option span {
+  display:block;
+  padding:10px 4px;
+  font-size:14px;
+}
+.option input:checked + span {
+  background:#2563eb;
+  color:white;
+  border-radius:999px;
+}
+
+/* ====== BUTTONS ====== */
+.btn-big {
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  font-weight:600;
+  border:none;
+  border-radius:999px;
+  margin-top:10px;
+}
+.next { background:#2563eb; color:white; }
+.prev { background:#e2e8f0; }
+
+/* ===== RESULT ===== */
+.result-card {
+  border-radius:16px;
+  padding:18px;
+  margin-top:10px;
+}
+.result-low    { background:#ecfdf5; border:1px solid #bbf7d0; }
+.result-mod    { background:#fffbeb; border:1px solid #facc15; }
+.result-high   { background:#fef2f2; border:1px solid #fecaca; }
+
+.result-title { font-size:18px; font-weight:700; }
+
+/* ===== Dashboard ===== */
+.stat-grid {
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.stat-card {
+  background:white;
+  border-radius:12px;
+  padding:14px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.06);
+}
+.stat-label { color:#64748b; font-size:13px; }
+.stat-value { font-size:22px; font-weight:600; }
+
+.link-sm {
+  font-size:12px;
+  text-align:right;
+  color:#64748b;
+  text-decoration:underline;
+  cursor:pointer;
+  margin-top:8px;
+}
+
+/* ===== Choice Card ===== */
+
+.choice-grid{
+  display:grid;
+  gap:12px;
+}
+
+.gender-grid{
+  grid-template-columns:repeat(3,1fr);
+}
+
+.choice-card{
+  display:block;
+  cursor:pointer;
+}
+
+.choice-card input{
+  display:none;
+}
+
+.choice-card span{
+  display:block;
+  background:#f8fafc;
+  border:2px solid #e2e8f0;
+  border-radius:16px;
+  padding:16px;
+  text-align:center;
+  font-weight:600;
+  color:#334155;
+  transition:.25s;
+}
+
+.choice-card input:checked + span{
+  background:#2563eb;
+  color:white;
+  border-color:#2563eb;
+  box-shadow:0 4px 16px rgba(37,99,235,.25);
+}
+
+.choice-card span:active{
+  transform:scale(.97);
+}
+
+.br-space{
+  height:24px;
+}
+
+.input-box{
+  width:100%;
+  padding:15px;
+  border:1px solid #e2e8f0;
+  border-radius:16px;
+  background:white;
+  font-size:16px;
+}
+
+</style>
+</head>
+<body>
+
+<form id="survey">
+
+<!-- PAGE 0 --------- -->
+<div class="page active" id="page0">
+  <div class="section" style="text-align:center;">
+    <img src="https://cdn.jsdelivr.net/gh/mt2287hc/labkkh/Logo-KKH.png" width="110" />
+    <h2>แบบประเมินความเสี่ยงสุขภาพทางเพศ</h2>
+
+<p class="sub">
+สำหรับการคัดกรองความเสี่ยงโรคติดต่อทางเพศสัมพันธ์และการเข้าถึงบริการแบบไม่ระบุตัวตน
+</p>
+   <p class="sub"> 💙คลินิกให้คำปรึกษา โรงพยาบาลขอนแก่น</p>
+    <button class="btn-big next" type="button" onclick="startSurvey()">เริ่มทำแบบประเมิน</button>
+
+    <div class="link-sm" onclick="openDashboard()">ดูสถิติทั้งหมด</div>
+  </div>
+</div>
+
+<!-- PAGE 1 --------- -->
+<div class="page" id="page1">
+<div class="section">
+
+  <h3>ข้อมูลทั่วไป</h3>
+
+  <label>ช่วงอายุ</label>
+
+  <div class="choice-grid">
+
+    <label class="choice-card">
+      <input type="radio" name="ageRange" value="13-17">
+      <span>13–17 ปี</span>
+    </label>
+
+    <label class="choice-card">
+      <input type="radio" name="ageRange" value="18+">
+      <span>18 ปีขึ้นไป</span>
+    </label>
+
+  </div>
+
+  <div class="br-space"></div>
+
+  <label>เพศ</label>
+
+  <div class="choice-grid gender-grid">
+
+    <label class="choice-card">
+      <input type="radio" name="gender" value="ชาย">
+      <span>👨 ชาย</span>
+    </label>
+
+    <label class="choice-card">
+      <input type="radio" name="gender" value="หญิง">
+      <span>👩 หญิง</span>
+    </label>
+
+    <label class="choice-card">
+      <input type="radio" name="gender" value="อื่นๆ">
+      <span>🏳️‍🌈 LGBTQ+</span>
+    </label>
+
+  </div>
+
+</div>
+
+  <button class="btn-big prev" type="button" onclick="prevPage()">ย้อนกลับ</button>
+  <button class="btn-big next" type="button" onclick="toQuestions()">ถัดไป</button>
+</div>
+
+<!-- PAGE 2 --------- -->
+<div class="page" id="page2">
+  <div class="section">
+    <h3>ประเมินความเสี่ยง</h3>
+    <p class="sub">ตอบตามความจริง ระบบไม่สามารถย้อนกลับหาตัวบุคคลได้</p>
+
+    <div id="riskQuestions"></div>
+  </div>
+
+  <button class="btn-big prev" type="button" onclick="prevPage()">ย้อนกลับ</button>
+  <button class="btn-big next" type="button" onclick="submitForm()">ส่งแบบประเมิน</button>
+</div>
+
+<!-- PAGE 3 --------- -->
+<div class="page" id="page3">
+  <div class="section">
+    <h3>ผลการประเมิน</h3>
+    <div id="resultArea"></div>
+  </div>
+
+  <button class="btn-big next" type="button" onclick="restart()">ทำแบบประเมินใหม่</button>
+</div>
+
+<!-- PAGE 4 ---------- -->
+<div class="page" id="page4">
+  <div class="section">
+    <h3>Dashboard (Staff Only)</h3>
+    <div id="dashArea">กำลังโหลด...</div>
+  </div>
+
+  <button class="btn-big prev" type="button" onclick="backHome()">กลับหน้าแรก</button>
+</div>
+
+
+<!-- PAGE 5 ---------- -->
+<div class="page" id="page5">
+
+<div class="section">
+
+<h3>
+
+📅 นัดหมายเข้ารับบริการ
+
+</h3>
+
+
+
+<label>วันที่เข้ารับบริการ</label>
+
+<input
+type="text"
+id="appointmentDate"
+class="input-box"
+placeholder="เลือกวันที่">
+
+
+<br>
+
+<label>
+
+เวลา
+
+</label>
+
+<select
+id="appointmentTime"
+class="form-control">
+
+<option value="09:00">
+09:00
+</option>
+
+<option value="10:00">
+10:00
+</option>
+
+<option value="13:00">
+13:00
+</option>
+
+<option value="14:00">
+14:00
+</option>
+
+</select>
+
+</div>
+
+<button
+class="btn-big prev"
+type="button"
+onclick="showPage(3)">
+
+ย้อนกลับ
+
+</button>
+
+<button
+id="btnSaveAppointment"
+class="btn-big next"
+type="button"
+onclick="saveAppointment()">
+
+ยืนยันนัดหมาย
+
+</button>
+
+</div>
+
+</form>
+
+
+
+<script>
+/* =============================
+   CONFIG
+============================= */
+const API_URL=
+"https://script.google.com/macros/s/AKfycbx6FF-Ssbm5JO4wLLbgwjwRCENrRbSEiv_iXj92_btfK_D4bBHgyL1fw9Z2cjd3yso/exec";
+
+async function callApi(action,data={}){
+
+  const res = await fetch(
+    API_URL,
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        action,
+        ...data
+      })
+    }
+  );
+
+  if(!res.ok){
+
+    throw new Error(
+      "Server Error : "+
+      res.status
+    );
+
+  }
+
+  return await res.json();
+
+}
+
+
+
+let currentPage = 0;
+
+let currentAssessmentId = "";
+
+
+let currentUser = null;
+
+const SID=
+new URLSearchParams(
+location.search
+).get("sid");
+
+
+if(SID){
+
+  localStorage.setItem(
+    "SID",
+    SID
+  );
+
+}
+
+window.onload = async function(){
+
+  if(!SID){
+
+    Swal.fire(
+      "Session Expired",
+      "กรุณาเข้าสู่ระบบใหม่",
+      "error"
+    );
+
+    return;
+
+  }
+
+  try{
+
+    const res = await callApi(
+      "session",
+      {
+        sid:SID
+      }
+    );
+
+    if(
+      !res.ok ||
+      !res.user
+    ){
+
+      Swal.fire({
+
+        icon:"warning",
+
+        title:"Session Expired",
+
+        text:"กรุณาเข้าสู่ระบบใหม่"
+
+      }).then(()=>{
+
+        location.href=
+        LOGIN_URL;
+
+      });
+
+      return;
+
+    }
+
+    currentUser = res.user;
+
+    console.log(
+      "currentUser =",
+      currentUser
+    );
+
+  }
+  catch(err){
+
+    console.error(err);
+
+    Swal.fire(
+      "Error",
+      "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์",
+      "error"
+    );
+
+  }
+
+  flatpickr(
+    "#appointmentDate",
+    {
+      dateFormat:"Y-m-d",
+      minDate:"today"
+    }
+  );
+
+};
+
+// function sendResultToLine(resultText){
+
+//   const userId =
+//     currentUser?.lineUserId;
+
+//   if(!userId){
+
+//     Swal.fire(
+//       "ไม่พบ LINE User",
+//       "",
+//       "warning"
+//     );
+
+//     return;
+
+//   }
+
+//   callApi(
+//     "send_result",
+//     {
+//       lineUserId:userId,
+//       resultText:resultText
+//     }
+//   )
+//   .then(res=>{
+
+//     if(res.ok){
+
+//       console.log(
+//         "ส่งข้อความสำเร็จ"
+//       );
+
+//     }
+
+//   })
+//   .catch(err=>{
+
+//     console.error(err);
+
+//   });
+
+// }
+
+/* =============================
+   PAGE CONTROL
+============================= */
+function showPage(n){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelector("#page"+n).classList.add("active");
+  currentPage = n;
+  scroll(0,0);
+}
+
+function startSurvey(){ showPage(1); }
+function prevPage(){ showPage(currentPage - 1); }
+function restart(){ location.reload(); }
+function backHome(){ showPage(0); }
+
+/* =============================
+   QUESTIONS
+============================= */
+const youthSet = [
+  { id:"Y1", text:"คุณเคยมีเพศสัมพันธ์หรือไม่?" },
+  { id:"Y4", text:"คุณเคยถูกบังคับหรือล่วงละเมิดทางเพศหรือไม่?", always:true },
+  { id:"Y5", text:"ภายใน 72 ชั่วโมงที่ผ่านมา มีเพศสัมพันธ์โดยไม่ป้องกันหรือไม่?", always:true }
+];
+
+const adultSet = [
+  { id:"Q1", text:"คุณเคยมีเพศสัมพันธ์หรือไม่?" },
+  { id:"Q2", text:"คุณใช้ถุงยางทุกครั้งหรือไม่?", dependsOn:"Q1", showIf:"ใช่" },
+  { id:"Q3", text:"12 เดือนที่ผ่านมา มีคู่นอน > 1 คนไหม?", dependsOn:"Q1", showIf:"ใช่" },
+  { id:"Q4", text:"คุณทราบสถานะ HIV ของคู่นอนหรือไม่?", dependsOn:"Q1", showIf:"ใช่" },
+  { id:"Q5", text:"คุณเคยใช้ยาเสพติดแบบฉีดร่วมกับผู้อื่นหรือไม่?" },
+  { id:"Q6", text:"คุณเคยเป็นโรคติดต่อทางเพศสัมพันธ์ (STI) หรือไม่?", dependsOn:"Q1", showIf:"ใช่" },
+  { id:"Q7", text:"คุณเคยตรวจ HIV หรือไม่?" },
+  { id:"Q8", text:"คุณเคยถูกบังคับหรือล่วงละเมิดทางเพศหรือไม่?" },
+  { id:"Q9", text:"ภายใน 72 ชั่วโมงมีเพศสัมพันธ์โดยไม่ป้องกันหรือไม่?", dependsOn:"Q1", showIf:"ใช่" },
+  { id:"Q10",text:"คิดว่าตัวเองเสี่ยงมากกว่าคนทั่วไปไหม?" }
+];
+
+const symptomIntro = {
+  id:"SY0",
+  text:"ตอนนี้คุณมีอาการที่อาจเกี่ยวกับโรคติดต่อทางเพศสัมพันธ์หรือไม่?"
+};
+
+const symptomSet = [
+  { id:"SY1", text:"มีตกขาว/หนองผิดปกติ?" },
+  { id:"SY2", text:"แสบขัดเวลาปัสสาวะ?" },
+  { id:"SY3", text:"มีแผล/ตุ่มที่อวัยวะเพศ?" },
+  { id:"SY4", text:"มีผื่นบริเวณผิดปกติ?" },
+  { id:"SY5", text:"ปวดท้องน้อย/ปวดอัณฑะ?" },
+  { id:"SY6", text:"เจ็บคอหลังมีเพศสัมพันธ์ทางปาก?" }
+];
+
+/* =============================
+   RENDER QUESTIONS
+============================= */
+
+function renderOne(q, cls){
+  const box = `
+    <div class="question-box ${cls||""}" id="box_${q.id}">
+      <p>${q.text}</p>
+      <div class="radio-row">
+        <label class="option"><input type="radio" name="${q.id}" value="ใช่"><span>ใช่</span></label>
+        <label class="option"><input type="radio" name="${q.id}" value="ไม่"><span>ไม่</span></label>
+        <label class="option"><input type="radio" name="${q.id}" value="ไม่แน่ใจ"><span>ไม่แน่ใจ</span></label>
+      </div>
+    </div>`;
+  document.getElementById("riskQuestions").insertAdjacentHTML("beforeend", box);
+}
+
+function toQuestions(){
+
+  const age =
+    document.querySelector(
+      'input[name="ageRange"]:checked'
+    )?.value || "";
+
+  const gender =
+    document.querySelector(
+      'input[name="gender"]:checked'
+    )?.value || "";
+
+  if(!age)
+    return Swal.fire("กรุณาเลือกอายุ");
+
+  if(!gender)
+    return Swal.fire("กรุณาเลือกเพศ");
+
+  buildQuestions();
+  showPage(2);
+
+}
+
+function buildQuestions(){
+  const container = document.getElementById("riskQuestions");
+  container.innerHTML = "";
+
+  const age = document.querySelector('input[name="ageRange"]:checked')?.value || ""
+
+  if(age === "13-17"){
+    renderOne(youthSet[0], "");
+
+    document.querySelectorAll("input[name='Y1']").forEach(el=>{
+      el.addEventListener("change", buildYouthFollow);
+    });
+
+    buildYouthFollow();
+  } else {
+    renderAdult(false);
+  }
+
+  // 🔥 เพิ่มตรงนี้ — เรียกครั้งเดียวเท่านั้น
+  renderSymptomsIntro();
+}
+
+
+function buildYouthFollow(){
+  const y1 = document.querySelector("input[name='Y1']:checked");
+  const val = y1 ? y1.value : "";
+
+  document.querySelectorAll(".youth-extra, .adult-extra, .symptom-extra").forEach(x=>x.remove());
+
+   // ถ้าตอบ "ใช่" ให้ใช้ชุดคำถามผู้ใหญ่
+  if(val === "ใช่"){
+
+    renderAdult(true);
+
+  }
+////ถ้าไม่แสดงคำถามเด็กเพิ่ม////
+  // if(val === "ไม่"){
+  //   youthSet.filter(q=>q.id!=="Y1").forEach(q=>{
+  //     renderOne(q, "youth-extra");
+  //   });
+  // }
+  // else if(val === "ใช่"){
+  //   renderAdult(true);
+  // }
+}
+
+
+/* --- Adult --- */
+function renderAdult(isYouth){
+  adultSet.forEach(q=>{
+    if(isYouth && q.id==="Q1") return;
+    renderOne(q, "adult-extra");
+  });
+
+  adultSet.forEach(q=>{
+    if(q.dependsOn){
+      document.querySelectorAll(`input[name='${q.dependsOn}']`).forEach(el=>{
+        el.addEventListener("change", ()=>dynamicShow(adultSet));
+      });
+    }
+  });
+
+  dynamicShow(adultSet);
+}
+
+function dynamicShow(list){
+  list.forEach(q=>{
+    if(!q.dependsOn) return;
+
+    // const parent = document.querySelector(`input[name='${q.dependsOn}']:checked`);
+
+    let parent =
+  document.querySelector(
+    `input[name='${q.dependsOn}']:checked`
+  );
+
+// กรณีอายุ 13-17 และตอบ Y1 = ใช่
+if(
+  !parent &&
+  q.dependsOn==="Q1"
+){
+  const y1 =
+    document.querySelector(
+      "input[name='Y1']:checked"
+    );
+
+  if(
+    y1 &&
+    y1.value==="ใช่"
+  ){
+    parent = {
+      value:"ใช่"
+    };
+  }
+}
+
+    const box = document.getElementById("box_"+q.id);
+    if(!box) return;
+
+    box.style.display = (parent && parent.value === q.showIf) ? "block" : "none";
+  });
+}
+
+/* --- Symptoms --- */
+function renderSymptomsIntro(){
+  renderOne(symptomIntro);
+
+  document.querySelectorAll("input[name='SY0']").forEach(el=>{
+    el.addEventListener("change", renderSymDetails);
+  });
+}
+
+function renderSymDetails(){
+  document.querySelectorAll(".symptom-extra").forEach(x=>x.remove());
+
+  const v = document.querySelector("input[name='SY0']:checked");
+  if(!v || v.value!=="ใช่") return;
+
+  symptomSet.forEach(q=>renderOne(q, "symptom-extra"));
+}
+
+/* =============================
+   SUBMIT
+============================= */
+
+async function submitForm(){
+
+  const boxes =
+    document.querySelectorAll(
+      "#riskQuestions .question-box"
+    );
+
+  let answers = {};
+
+  for(let b of boxes){
+
+    if(b.style.display==="none")
+      continue;
+
+    const name =
+      b.querySelector(
+        "input[type=radio]"
+      ).name;
+
+    const chk =
+      b.querySelector(
+        "input[type=radio]:checked"
+      );
+
+    if(!chk){
+
+      return Swal.fire(
+        "กรุณาตอบทุกข้อที่แสดง"
+      );
+
+    }
+
+    answers[name] = chk.value;
+
+  }
+
+  if(!currentUser){
+
+    Swal.fire(
+      "กรุณารอสักครู่",
+      "กำลังโหลดข้อมูลผู้ใช้งาน",
+      "warning"
+    );
+
+    return;
+
+  }
+
+  Swal.fire({
+    title:"กำลังประเมิน...",
+    allowOutsideClick:false,
+    didOpen:()=>{
+      Swal.showLoading();
+    }
+  });
+
+  const payload = {
+
+    consent:true,
+
+    sessionId:
+      "sess_"+Date.now(),
+
+    userAgent:"LIFF",
+
+    clientIp:"unknown",
+
+    ageRange:
+      document.querySelector(
+        'input[name="ageRange"]:checked'
+      )?.value || "",
+
+    gender:
+      document.querySelector(
+        'input[name="gender"]:checked'
+      )?.value || "",
+
+    lineUserId:
+      currentUser.lineUserId,
+
+    answers:answers
+
+  };
+
+  console.log(
+    "payload = ",
+    payload
+  );
+
+  try{
+
+    const data =
+      await callApi(
+        "screening",
+        payload
+      );
+
+    Swal.close();
+
+    console.log(
+      "response = ",
+      data
+    );
+
+    if(
+      !data ||
+      !data.ok
+    ){
+
+      Swal.fire(
+        "ผิดพลาด",
+        data?.error ||
+        "ไม่สามารถประเมินได้",
+        "error"
+      );
+
+      return;
+
+    }
+
+    currentAssessmentId =
+      data.assessmentId;
+
+    showResult(
+      data.result
+    );
+
+  }
+  catch(err){
+
+    Swal.close();
+
+    console.error(err);
+
+    Swal.fire(
+      "Error",
+      err.message ||
+      "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้",
+      "error"
+    );
+
+  }
+
+}
+
+
+/* =============================
+   RESULT
+============================= */
+
+function showResult(result){
+  showPage(3);
+
+  let html = "";
+
+  if(result.level === "LOW"){
+    html = `<div class="result-card result-low">
+              <div class="result-title">🟢 ไม่พบปัจจัยเสี่ยงสำคัญ</div>
+              ยังไม่พบภาวะที่ต้องเข้ารับบริการเพิ่มเติมในขณะนี้
+              แนะนำให้ปฏิบัติตนอย่างปลอดภัย และตรวจสุขภาพตามความเหมาะสมอย่างสม่ำเสมอ
+            </div>`;
+  }
+  else if(result.level === "MODERATE"){
+    html = `<div class="result-card result-mod">
+              <div class="result-title">🟡 ควรตรวจสุขภาพเพิ่มเติมตามความเหมาะสม</div>
+              จากข้อมูลที่ท่านให้ ยังไม่พบภาวะฉุกเฉินที่ต้องเข้ารับบริการโดยเร่งด่วน
+              แนะนำให้ตรวจสุขภาพตามปกติ หรือปรึกษาบุคลากรทางการแพทย์เมื่อมีอาการผิดปกติ
+              พร้อมทั้งปฏิบัติตนอย่างปลอดภัยและดูแลสุขภาพอย่างสม่ำเสมอ
+              </div>`;
+  }
+  else if(result.level === "HIGH"){
+              html = `
+              <div class="result-card result-high">
+
+              <div class="result-title">
+
+              🔴 ความเสี่ยงสูง
+
+              </div>
+
+              ควรเข้ารับบริการที่  คลินิกให้คำปรึกษา โรงพยาบาลขอนแก่น โดยเร็วที่สุด💙
+              ท่านสามารถมาที่ตึก OPD2 ชั้น2 ได้โดยตรงโดยไม่ต้องผ่านการคัดกรองผู้ป่วย
+              การนัดหมายของท่านจะไม่ถูกระบุตัวตน ก่อนเข้ารับบริการที่คลินิก 
+              <br><br>
+
+              <button
+              type="button"
+              class="btn-big next"
+              onclick="showPage(5)">
+
+              📅 นัดหมายเข้ารับบริการ
+
+              </button>
+
+              </div>`;
+  }
+  else if(result.level==="EMERGENCY"){
+              html = `
+              <div class="result-card result-high">
+
+              <div class="result-title">
+
+              🚨 กรณีเร่งด่วนที่สุด
+
+              </div>
+
+              ควรเข้ารับบริการโดยเร็วที่สุดภายใน 72 ชั่วโมง💙
+              เพื่อพิจารณาการรับยา PEP ที่ คลินิกให้คำปรึกษา โรงพยาบาลขอนแก่น
+              ท่านสามารถมาที่ตึก OPD2 ชั้น2 ได้โดยตรงโดยไม่ต้องผ่านการคัดกรองผู้ป่วย
+              การนัดหมายของท่านจะไม่ถูกระบุตัวตน ก่อนเข้ารับบริการที่คลินิก 
+              <br><br>
+
+              <button
+              type="button"
+              class="btn-big next"
+              onclick="showPage(5)">
+
+              📅 นัดหมายด่วน
+
+              </button>
+
+              </div>`;
+    } 
+     else{html=`
+        <div class="result-card result-high">
+
+        <div class="result-title">
+        ⚠️ เกิดข้อผิดพลาด
+        </div>
+
+        ไม่สามารถแปลผลได้
+
+        </div>
+        `;
+        }
+
+  document.getElementById("resultArea").innerHTML = html;
+}
+
+/* =============================
+   DASHBOARD
+============================= */
+function openDashboard(){
+  showPage(4);
+  loadStats();
+}
+
+async function loadStats(){
+
+  const dash =
+    document.getElementById(
+      "dashArea"
+    );
+
+  dash.innerHTML =
+    "กำลังโหลด...";
+
+  try{
+
+    const data =
+      await callApi(
+        "statistics"
+      );
+
+    if(
+      !data ||
+      !data.ok
+    ){
+
+      dash.innerHTML =
+        "โหลดไม่ได้";
+
+      return;
+
+    }
+
+    const c =
+      data.counts;
+
+    dash.innerHTML = `
+    <div class="stat-grid">
+
+      <div class="stat-card">
+        <div class="stat-label">
+        ต่ำ
+        </div>
+        <div class="stat-value">
+        ${c.LOW || 0}
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+        ปานกลาง
+        </div>
+        <div class="stat-value">
+        ${c.MODERATE || 0}
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+        สูง
+        </div>
+        <div class="stat-value">
+        ${c.HIGH || 0}
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">
+        ฉุกเฉิน
+        </div>
+        <div class="stat-value">
+        ${c.EMERGENCY || 0}
+        </div>
+      </div>
+
+    </div>
+    `;
+
+  }
+  catch(err){
+
+    console.error(err);
+
+    dash.innerHTML =
+      "เกิดข้อผิดพลาด";
+
+  }
+
+}
+
+async function saveAppointment(){
+
+  const btn =
+    document.getElementById(
+      "btnSaveAppointment"
+    );
+
+  const appointmentDate =
+    document.getElementById(
+      "appointmentDate"
+    ).value;
+
+  const appointmentTime =
+    document.getElementById(
+      "appointmentTime"
+    ).value;
+
+  const confirm =
+    await Swal.fire({
+
+      title:"ยืนยันนัดหมาย",
+
+      html:`
+      <div style="text-align:left">
+
+      <b>วันที่</b><br>
+      ${formatThaiDate(appointmentDate)}
+
+      <br><br>
+
+      <b>เวลา</b><br>
+      ${appointmentTime} น.
+
+      <br><br>
+
+      กรุณาตรวจสอบข้อมูลก่อนยืนยัน
+
+      </div>
+      `,
+
+      icon:"question",
+
+      showCancelButton:true,
+
+      confirmButtonText:
+        "ยืนยันนัดหมาย",
+
+      cancelButtonText:
+        "ย้อนกลับ"
+
+    });
+
+  if(!confirm.isConfirmed)
+    return;
+
+  btn.disabled = true;
+
+  Swal.fire({
+
+    title:"กำลังบันทึกนัดหมาย",
+
+    allowOutsideClick:false,
+
+    didOpen:()=>Swal.showLoading()
+
+  });
+
+  try{
+
+    const payload = {
+
+      lineUserId:
+        currentUser.lineUserId,
+
+      assessmentId:
+        currentAssessmentId,
+
+      appointmentDate,
+
+      appointmentTime
+
+    };
+
+    console.log(
+      "payload = ",
+      payload
+    );
+
+    const res =
+      await callApi(
+        "appointment",
+        payload
+      );
+
+    Swal.close();
+
+    console.log(
+      "response = ",
+      res
+    );
+
+    if(!res){
+
+      Swal.fire(
+
+        "ผิดพลาด",
+
+        "ไม่ได้รับข้อมูลตอบกลับ",
+
+        "error"
+
+      );
+
+      return;
+
+    }
+
+    if(res.ok){
+
+      Swal.fire({
+
+        icon:"success",
+
+        title:"นัดหมายเรียบร้อย",
+
+        html:
+          "เลขนัด : " +
+          res.appointmentId +
+
+          "<br>คิวที่ : " +
+          res.queueNo
+
+      });
+
+    }
+    else{
+
+      Swal.fire(
+
+        "ผิดพลาด",
+
+        res.error ||
+        "ไม่สามารถนัดหมายได้",
+
+        "error"
+
+      );
+
+    }
+
+  }
+  catch(err){
+
+    Swal.close();
+
+    console.error(err);
+
+    Swal.fire(
+
+      "ERROR",
+
+      err.message ||
+      String(err),
+
+      "error"
+
+    );
+
+  }
+  finally{
+
+    btn.disabled = false;
+
+  }
+
+}
+
+function formatThaiDate(dateStr){
+  return new Date(dateStr)
+    .toLocaleDateString(
+      "th-TH",
+      {
+        year:"numeric",
+        month:"long",
+        day:"numeric"
+      }
+    );
+}
+
+</script>
+
+</body>
+</html>
